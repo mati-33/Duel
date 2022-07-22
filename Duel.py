@@ -35,13 +35,22 @@ class Character:
         self.health = health
 
 
+def play_again():
+    # this function ask user if he wants to play again
+    choice = input("\nPlay again? (yes/no): ").upper()
+    if choice == 'YES':
+        return True
+    else:
+        return False
+
+
 def fight(char_1, char_2):
     # these variables will be used later to restore characters health
     health_to_restore_1 = char_1.health
     health_to_restore_2 = char_2.health
 
     # fight will end when one of the characters health will be equal or less than 0
-    while char_1.health > 0 and char_2.health > 0:
+    while char_1.health >= 0 and char_2.health >= 0:
 
         # storing each character strike damage in a variables
         damage_1 = char_1.strike()
@@ -93,3 +102,33 @@ def fight(char_1, char_2):
             print(f"{char_1.name} hits for {damage_1}! {critical_strike_msg_1}")
             print(f"{char_2.name} hits for {damage_2}! {critical_strike_msg_2}")
         time.sleep(0.7)
+
+    # displaying result of the fight
+    if char_1.health <= 0 and char_2.health <= 0:
+        print('\nDraw!')
+    elif char_1.health > 0 >= char_2.health:
+        print(f"\n{char_1.name} wins the fight!")
+    elif char_2.health > 0 >= char_1.health:
+        print(f"\n{char_2.name} wins the fight!")
+
+    # restoring characters health after the fight
+    # with the initial value of their health points
+    char_1.restore_health(health_to_restore_1)
+    char_2.restore_health(health_to_restore_2)
+
+
+# creation of characters for testing purposes
+test_character_1 = Character('josh', 200, [20, 25], 30, 30)
+test_character_2 = Character('mosh', 100, [15, 20], 50, 50)
+
+
+def main():
+
+    # main game algorithm - needs to be developed
+    fight(test_character_1, test_character_2)
+    while play_again():
+        fight(test_character_1, test_character_2)
+
+
+if __name__ == '__main__':
+    main()
