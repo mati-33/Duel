@@ -4,6 +4,7 @@ import os
 
 
 class Character:
+    # this class is modeling characters that will fight each other
 
     # this method creates character attributes
     def __init__(self, health, damage, critical_strike_chance, dodge_chance, name):
@@ -85,8 +86,23 @@ def make_choice(char_list):
 
     # returning characters list index of a list of characters
     # other functions will require characters list index as an input
-    choice = input("\nType corresponding number: ")
-    list_index = int(choice) - 1
+
+    # creation of empty string 'choice', so while loop can initialize
+    choice = ""
+
+    # user have to type number that corresponds to a character
+    # otherwise while loop won't break
+    while choice not in range(1, len(char_list) + 1):
+
+        # this try-except block is in case user will not input number
+        try:
+            choice = int(input("\nType corresponding number: "))
+            if choice not in range(1, len(char_list) + 1):
+                print('Please, typy only the corresponding number')
+        except ValueError:
+            print('Please, type only the corresponding number')
+
+    list_index = choice - 1
     return list_index
 
 
