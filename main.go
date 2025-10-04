@@ -56,9 +56,32 @@ type UserInterface interface {
 	GetInput(prompt string) string
 }
 
+type Command struct {
+	Keybind     string
+	Description string
+	Callback    func()
+}
+
 type Game struct {
-	ui    UserInterface
-	chars map[string]*Character
+	ui       UserInterface
+	chars    map[string]Character
+	commands map[string]Command
+}
+
+func NewGame(ui UserInterface) Game {
+	return Game{
+		ui:       ui,
+		chars:    make(map[string]Character),
+		commands: make(map[string]Command),
+	}
+}
+
+func (g *Game) RegisterCommand(c Command) {
+	g.commands[c.Keybind] = c
+}
+
+func (g *Game) RegisterCharacter(ch Character) {
+	g.chars[ch.Name] = ch
 }
 
 func (g *Game) Run() {
@@ -68,34 +91,21 @@ func (g *Game) Run() {
 ░▀▀▀░▀▀▀░░░▀▀░░▀▀▀░▀▀▀░▀▀▀░▀
 
 Welcome to the Duel GO version!`
-	menuMessage := `
-p - Play
-s - Show character stats
-q - Quit
-	`
 	g.ui.ShowMessage(welcomeMessage)
 	for {
-		g.ui.ShowMessage(menuMessage)
+		g.showMenu()
 		userCommand := g.ui.GetInput("Type your command:")
-		switch userCommand {
-		case "p":
-			g.play()
-		case "s":
-			g.showCharacterStats()
-		case "q":
-			g.ui.ShowMessage("Bye!")
-			return
-		default:
+		command, ok := g.commands[userCommand]
+		if !ok {
 			g.ui.ShowMessage("Unknown command")
+			continue
 		}
+		command.Callback()
 	}
 }
 
 func (g *Game) play() {
 	char1, char2 := g.chooseChars()
-	initialHealth1 := char1.Health
-	initialHealth2 := char2.Health
-
 	g.ui.ShowMessage(fmt.Sprintf("\n %s vs %s!\n", char1.Name, char2.Name))
 	for {
 		time.Sleep(1 * time.Second)
@@ -109,12 +119,10 @@ func (g *Game) play() {
 			g.ui.ShowMessage(fmt.Sprintf("%s won!", char2.Name))
 			break
 		}
-		g.ui.ShowMessage(char1.Attack(char2).Describe())
-		g.ui.ShowMessage(char2.Attack(char1).Describe())
+		g.ui.ShowMessage(char1.Attack(&char2).Describe())
+		g.ui.ShowMessage(char2.Attack(&char1).Describe())
 		g.ui.ShowMessage("")
 	}
-	char1.Health = initialHealth1
-	char2.Health = initialHealth2
 }
 
 func (g *Game) showCharacterStats() {
@@ -127,7 +135,21 @@ func (g *Game) showCharacterStats() {
 
 }
 
-func (g *Game) chooseChars() (*Character, *Character) {
+func (g *Game) quit() {
+	g.ui.ShowMessage("Bye!")
+	os.Exit(0)
+}
+
+func (g *Game) showMenu() {
+	var b strings.Builder
+	fmt.Fprint(&b, "\n")
+	for k, c := range g.commands {
+		fmt.Fprintf(&b, "%s - %s\n", k, c.Description)
+	}
+	g.ui.ShowMessage(b.String())
+}
+
+func (g *Game) chooseChars() (Character, Character) {
 	names := make([]string, 0, 2)
 	g.ui.ShowMessage("\nAvailable characters:")
 	var b strings.Builder
@@ -167,29 +189,42 @@ func (ui StdUI) GetInput(prompt string) string {
 
 func main() {
 	ui := StdUI{}
-	chars := map[string]*Character{
-		"Dodger": {
-			Name:         "Dodger",
-			Health:       100,
-			Damage:       10,
-			DodgeChance:  0.35,
-			CriticChance: 0.05,
-		},
-		"Critier": {
-			Name:         "Critier",
-			Health:       100,
-			Damage:       10,
-			DodgeChance:  0.05,
-			CriticChance: 0.35,
-		},
-		"Tank": {
-			Name:         "Tank",
-			Health:       160,
-			Damage:       10,
-			DodgeChance:  0.01,
-			CriticChance: 0.01,
-		},
-	}
-	game := Game{ui, chars}
+	game := NewGame(ui)
+	game.RegisterCharacter(Character{
+		Name:         "Dodger",
+		Health:       100,
+		Damage:       10,
+		DodgeChance:  0.35,
+		CriticChance: 0.05,
+	})
+	game.RegisterCharacter(Character{
+		Name:         "Critier",
+		Health:       100,
+		Damage:       10,
+		DodgeChance:  0.05,
+		CriticChance: 0.35,
+	})
+	game.RegisterCharacter(Character{
+		Name:         "Tank",
+		Health:       160,
+		Damage:       10,
+		DodgeChance:  0.01,
+		CriticChance: 0.01,
+	})
+	game.RegisterCommand(Command{
+		Keybind:     "p",
+		Description: "Play",
+		Callback:    func() { game.play() },
+	})
+	game.RegisterCommand(Command{
+		Keybind:     "s",
+		Description: "Show character stats",
+		Callback:    func() { game.showCharacterStats() },
+	})
+	game.RegisterCommand(Command{
+		Keybind:     "q",
+		Description: "Quit",
+		Callback:    func() { game.quit() },
+	})
 	game.Run()
 }
